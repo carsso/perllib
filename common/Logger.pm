@@ -3,6 +3,7 @@ use strict;
 use warnings;
 use lib '/perllib';
 use Data::Dumper;
+use Scalar::Util;
 
 use overload (
     'fallback' => 1,
@@ -51,21 +52,23 @@ sub formatData
     my $data = $params{'data'};
     if(ref($data))
     {
-        if(UNIVERSAL::can($data, 'toString'))
+        if(Scalar::Util::blessed($data) and $data->can('toString'))
         {
-            return $data->toString(depth => 1);
+            $data = $data->toString(depth => 1);
         }
-        require Data::Dumper;
-        my $dumper = Data::Dumper->new([$data]);
-        $dumper->Freezer("Dumper_Freezer");
-        $dumper->Toaster("Dumper_Toaster");
-        $dumper->Terse(1);
-        $dumper->Varname('    ');
-        $dumper->Pair(' => ');
-        my $dumperData = $dumper->Dump;
-        $dumperData =~ s/\s+$//s;
-        $data = $dumperData;
+        else
+        {
+            require Data::Dumper;
+            my $dumper = Data::Dumper->new([$data]);
+            $dumper->Freezer("Dumper_Freezer");
+            $dumper->Toaster("Dumper_Toaster");
+            $dumper->Terse(1);
+            $dumper->Varname('    ');
+            $dumper->Pair(' => ');
+            $data = $dumper->Dump;
+        }
     }
+    $data =~ s/\s+$//s;
     return $data;
 }
 
